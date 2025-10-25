@@ -1,0 +1,40 @@
+# Install ImportExcel if needed
+<#
+if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
+    Install-Module -Name ImportExcel -Scope CurrentUser -Force
+}
+#>
+
+
+# Timestamp for unique Excel file
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+$csvPath = "C:\cTemp\Windows_EOL_$timestamp.csv"
+
+# Function to get releases
+function Get-ReleasesData {
+    param([string]$ApiUrl, [string]$ProductType)
+    $response = Invoke-RestMethod -Uri $ApiUrl -Headers @{ "accept" = "application/json" }
+    $response.result.releases | ForEach-Object {
+        [PSCustomObject]@{
+            ProductType = $ProductType
+            ReleaseName = $_.name
+            Label       = $_.label
+            ReleaseDate = $_.releaseDate
+            LatestBuild = $_.latest.name
+            LatestLink  = $_.latest.link
+            EOLDate     = $_.eolFrom
+            Maintained  = $_.isMaintained
+        }
+    }
+}
+
+# Combine all releases
+$allReleases = @()
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/Windows" "Windows"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows-server-core" "Windows Server Core"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows-server" "Windows Server"
+
+# Export to Excel (no coloring)
+$allReleases | Export-csv -Path $excelPath 
+
+Write-Host "CSV export complete"
