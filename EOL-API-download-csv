@@ -35,6 +35,6 @@ $allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows
 $allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows-server" "Windows Server"
 
 # Export to Excel (no coloring)
-$allReleases | Export-csv -Path $excelPath 
+$allReleases | Export-csv -Path $csvPath 
 
 Write-Host "CSV export complete"
