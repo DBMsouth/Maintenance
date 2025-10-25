@@ -1,0 +1,50 @@
+# Install the ImportExcel module if not already installed
+if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
+    Install-Module -Name ImportExcel -Scope CurrentUser -Force
+}
+
+# Timestamp for unique Excel file
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+$excelPath = "C:\cTemp\Windows_EOL_$timestamp.xlsx"
+
+# Ensure the folder exists
+$folder = Split-Path $excelPath
+if (-not (Test-Path $folder)) { New-Item -ItemType Directory -Path $folder | Out-Null }
+
+# Fetch data from all three endpoints
+$windowsResponse = Invoke-RestMethod -Uri "https://endoflife.date/api/v1/products/Windows" -Headers @{ "accept" = "application/json" }
+$serverCoreResponse = Invoke-RestMethod -Uri "https://endoflife.date/api/v1/products/windows-server-core" -Headers @{ "accept" = "application/json" }
+$serverResponse = Invoke-RestMethod -Uri "https://endoflife.date/api/v1/products/windows-server" -Headers @{ "accept" = "application/json" }
+
+# Function to select relevant properties and add ProductType
+function Select-Releases {
+    param(
+        $releases,
+        $productType
+    )
+    $releases | ForEach-Object {
+        [PSCustomObject]@{
+            ProductType = $productType
+            ReleaseName = $_.name
+            Label       = $_.label
+            ReleaseDate = $_.releaseDate
+            LatestBuild = $_.latest.name
+            LatestLink  = $_.latest.link
+            EOLDate     = $_.eolFrom
+            Maintained  = $_.isMaintained
+        }
+    }
+}
+
+# Combine all releases
+$allReleases = @()
+$allReleases += Select-Releases $windowsResponse.result.releases "Windows"
+$allReleases += Select-Releases $serverCoreResponse.result.releases "Windows Server Core"
+$allReleases += Select-Releases $serverResponse.result.releases "Windows Server"
+
+# Export to Excel
+$allReleases | Export-Excel -Path $excelPath -AutoSize -BoldTopRow
+
+Write-Host " Excel export complete! File saved to:"
+Write-Host "  $excelPath"
+#fin
