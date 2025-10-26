@@ -1,0 +1,98 @@
+#
+#https://endoflife.date/api/v1/categories/os
+#
+
+# Timestamp for output CSV
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+$csvPath = "C:\cTemp\Windows_EOL_$timestamp.csv"
+
+# Function to get release data
+function Get-ReleasesData {
+    param([string]$ApiUrl, [string]$ProductType)
+    $response = Invoke-RestMethod -Uri $ApiUrl -Headers @{ "accept" = "application/json" }
+    $response.result.releases | ForEach-Object {
+        [PSCustomObject]@{
+            ProductType = $ProductType
+            ReleaseName = $_.name
+            Label       = $_.label
+            ReleaseDate = $_.releaseDate
+            LatestBuild = $_.latest.name
+            LatestLink  = $_.latest.link
+            EOLDate     = $_.eolFrom
+            Maintained  = $_.isMaintained
+        }
+    }
+}
+
+# Combine all releases
+$allReleases = @()
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/almalinux"	"almalinux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/alpine-linux"	"alpine-linux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/amazon-linux"	"amazon-linux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/android"	"android"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/antix"	"antix"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/big-ip"	"big-ip"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/centos"	"centos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/centos-stream"	"centos-stream"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/clear-linux"	"clear-linux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/cos"	"cos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/debian"	"debian"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/devuan"	"devuan"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/esxi"	"esxi"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/eurolinux"	"eurolinux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/fedora"	"fedora"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/fortios"	"fortios"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/freebsd"	"freebsd"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/ibm-aix"	"ibm-aix"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/ibm-i"	"ibm-i"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/ios"	"ios"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/ipados"	"ipados"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/kde-plasma"	"kde-plasma"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/lineageos"	"lineageos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/linux"	"linux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/linuxmint"	"linuxmint"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/macos"	"macos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/mageia"	"mageia"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/mxlinux"	"mxlinux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/netapp-ontap"	"netapp-ontap"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/netbackup-appliance-os"	"netbackup-appliance-os"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/netbsd"	"netbsd"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/nixos"	"nixos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/nutanix-aos"	"nutanix-aos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/openbsd"	"openbsd"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/opensuse"	"opensuse"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/openwrt"	"openwrt"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/oracle-linux"	"oracle-linux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/oracle-solaris"	"oracle-solaris"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/panos"	"panos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/photon"	"photon"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/pop-os"	"pop-os"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/postmarketos"	"postmarketos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/proxmox-ve"	"proxmox-ve"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/rhel"	"rhel"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/rocky-linux"	"rocky-linux"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/slackware"	"slackware"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/sles"	"sles"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/sns-firmware"	"sns-firmware"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/sns-smc"	"sns-smc"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/steamos"	"steamos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/suse-linux-micro"	"suse-linux-micro"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/tails"	"tails"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/tvos"	"tvos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/ubuntu"	"ubuntu"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/visionos"	"visionos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/watchos"	"watchos"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows"	"windows"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows-embedded"	"windows-embedded"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows-nano-server"	"windows-nano-server"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows-server"	"windows-server"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/windows-server-core"	"windows-server-core"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/xcp-ng"	"xcp-ng"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/yocto"	"yocto"
+$allReleases += Get-ReleasesData "https://endoflife.date/api/v1/products/zentyal"	"zentyal"
+
+# Export to CSV
+$allReleases | Export-csv -Path $csvPath 
+Write-Host "CSV export complete"
+$allReleases  | format-table
+#fin
