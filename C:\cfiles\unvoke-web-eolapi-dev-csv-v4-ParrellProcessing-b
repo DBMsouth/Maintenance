@@ -1,0 +1,111 @@
+# ----------------------------------------------------------------------------------------------------
+# Script: Get-OS_EOL.ps1
+# Purpose: Fetch End-of-Life (EOL) information for all OS products from endoflife.date dynamically.
+# Works in both Windows PowerShell 5.1 and PowerShell 7+
+# ----------------------------------------------------------------------------------------------------
+
+# Timestamp for output file
+$timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
+$csvPath = "C:\cTemp\OS_EOL_$timestamp.csv"
+
+# Ensure export directory exists
+$exportDir = Split-Path $csvPath
+if (-not (Test-Path $exportDir)) { New-Item -Path $exportDir -ItemType Directory | Out-Null }
+
+# Function to fetch release data for a given product
+function Get-ReleasesData {
+    param (
+        [string]$ApiUrl,
+        [string]$ProductName,
+        [string]$Label
+    )
+
+    try {
+        $response = Invoke-RestMethod -Uri $ApiUrl -Headers @{ "accept" = "application/json" } -ErrorAction Stop
+
+        $releases = @()
+        if ($response.result.releases) {
+            $releases = $response.result.releases
+        } elseif ($response.releases) {
+            $releases = $response.releases
+        }
+
+        foreach ($r in $releases) {
+            $latestName = $null
+            $latestLink = $null
+            if ($r.latest) {
+                $latestName = $r.latest.name
+                $latestLink = $r.latest.link
+            }
+
+            [PSCustomObject]@{
+                ProductName  = $ProductName
+                ProductLabel = $Label
+                ReleaseName  = $r.name
+                Label        = $r.label
+                ReleaseDate  = $r.releaseDate
+                Maintained   = $r.isMaintained
+                LatestBuild  = $latestName
+                LatestLink   = $latestLink
+                EOLDate      = $r.eol
+            }
+        }
+    }
+    catch {
+        Write-Warning "❌ Failed to fetch data for $ProductName ($ApiUrl): $($_.Exception.Message)"
+    }
+}
+
+# ----------------------------------------------------------------------------------------------------
+# Step 1: Get all OS product URIs dynamically
+# ----------------------------------------------------------------------------------------------------
+Write-Host "Fetching OS product list from endoflife.date..." -ForegroundColor Cyan
+
+$categoryUrl = "https://endoflife.date/api/v1/categories/os"
+try {
+    $categoryData = Invoke-RestMethod -Uri $categoryUrl -Headers @{ "accept" = "application/json" } -ErrorAction Stop
+}
+catch {
+    Write-Error "❌ Unable to fetch OS category list: $($_.Exception.Message)"
+    exit
+}
+
+$products = $categoryData.result
+Write-Host "Found $($products.Count) OS products to query." -ForegroundColor Green
+
+# ----------------------------------------------------------------------------------------------------
+# Step 2: Fetch each product's releases sequentially
+# ----------------------------------------------------------------------------------------------------
+$allReleases = @()
+$counter = 0
+
+foreach ($product in $products) {
+    $counter++
+    Write-Progress -Activity "Fetching OS EOL data" `
+                   -Status "Processing $($product.name) ($counter of $($products.Count))" `
+                   -PercentComplete (($counter / $products.Count) * 100)
+
+    $data = Get-ReleasesData -ApiUrl $product.uri -ProductName $product.name -Label $product.label
+    if ($data) { $allReleases += $data }
+}
+
+# ----------------------------------------------------------------------------------------------------
+# Step 3: Export and/or display data
+# ----------------------------------------------------------------------------------------------------
+if ($allReleases.Count -gt 0) {
+    $allReleases | Export-Csv -Path $csvPath -NoTypeInformation
+    Write-Host "`n✅ Export complete: $csvPath" -ForegroundColor Green
+
+    # Optional: show sample summary
+    $allReleases |
+        Select-Object ProductLabel, ReleaseName, ReleaseDate, EOLDate, Maintained |
+        Sort-Object ProductLabel, ReleaseDate -Descending |
+        Format-Table -AutoSize
+}
+else {
+    Write-Host "❌ No release data found." -ForegroundColor Red
+}
+
+# ----------------------------------------------------------------------------------------------------
+# End of Script
+# ----------------------------------------------------------------------------------------------------
